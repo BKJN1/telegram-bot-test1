@@ -62,7 +62,7 @@ def send_main_menu(chat_id):
     btn3 = types.KeyboardButton("Погода в Кокшетау")
     btn4 = types.KeyboardButton("Поболтать с AI")
     markup.add(btn1, btn2, btn3, btn4)
-    bot.send_message(chat_id, "да Аникоша?", reply_markup=markup)
+    bot.send_message(chat_id, "да жаным?", reply_markup=markup)
 
 
 @bot.message_handler(commands=['start'])
@@ -104,4 +104,5 @@ def handle_all(message):
 
 
 print("🤖 Бот запущен")
+print(f"Ключ API: {OPENROUTER_API_KEY}")
 bot.polling()
