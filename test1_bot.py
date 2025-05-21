@@ -2,6 +2,9 @@ import telebot
 from telebot import types
 import requests
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 TOKEN = '7529378084:AAFh7cMsZfa68IfnnwTitJsA5s7A0NvaUiA'
 WEATHER_API_KEY = 'c1244cd715f42ceee9f01cc84e1981fd'
@@ -83,5 +86,7 @@ def handle_all(message):
         else:
             answer = query_hf(text)
             bot.send_message(message.chat.id, answer)
+
+print(f"HF_API_TOKEN = {HF_API_TOKEN}")
 
 bot.polling()
