@@ -92,7 +92,8 @@ def handle_all(message):
             markup.add(btn_exit)
             bot.send_message(message.chat.id, "Привет! Пиши что угодно, я — доверенное лицо mr. Bekezhan. \nЧтобы выйти, нажми кнопку ниже.", reply_markup=markup)
         else:
-            bot.send_message(message.chat.id, f"{text}?")
+            bot.send_message(message.chat.id, "Я что то не понял. Вот, что я умею:")
+            send_main_menu(message.chat.id)
     elif state == 'chat_with_ai':
         if text == "Выйти из чата с AI":
             user_states[user_id] = 'menu'
@@ -104,5 +105,4 @@ def handle_all(message):
 
 
 print("🤖 Бот запущен")
-print(f"Ключ API: {OPENROUTER_API_KEY}")
 bot.polling()
