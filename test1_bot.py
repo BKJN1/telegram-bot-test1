@@ -3,31 +3,44 @@ from telebot import types
 import requests
 import os
 from dotenv import load_dotenv
+import json
+
 load_dotenv()
 
-
-TOKEN = '7529378084:AAFh7cMsZfa68IfnnwTitJsA5s7A0NvaUiA'
-WEATHER_API_KEY = 'c1244cd715f42ceee9f01cc84e1981fd'
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
+TOKEN = os.getenv("TELEGRAM_TOKEN")  # Храни токен в .env
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 bot = telebot.TeleBot(TOKEN)
 
 user_states = {}  # user_id -> state ('menu' или 'chat_with_ai')
 
-headers = {
-    "Authorization": f"Bearer {HF_API_TOKEN}"
-}
 
-API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+def query_openrouter(prompt):
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost",  # можно указать любой сайт
+        "X-Title": "TelegramBot"
+    }
+    data = {
+        "model": "deepseek/deepseek-chat",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            print("OpenRouter Error:", response.status_code, response.text)
+            return "Извини, сейчас не могу ответить."
+    except Exception as e:
+        print("Ошибка OpenRouter:", e)
+        return "Произошла ошибка при обращении к AI."
 
-def query_hf(text):
-    payload = {"inputs": text}
-    response = requests.post(API_URL, headers=headers, json=payload)
-    if response.status_code == 200:
-        json_resp = response.json()
-        if isinstance(json_resp, list) and 'generated_text' in json_resp[0]:
-            return json_resp[0]['generated_text']
-    return "Извини, сейчас не могу ответить."
 
 def get_weather():
     url = f"https://api.openweathermap.org/data/2.5/weather?q=Kokshetau&appid={WEATHER_API_KEY}&units=metric&lang=ru"
@@ -41,6 +54,7 @@ def get_weather():
     else:
         return "⚠ Не удалось получить данные о погоде."
 
+
 def send_main_menu(chat_id):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("О создателе")
@@ -50,17 +64,17 @@ def send_main_menu(chat_id):
     markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(chat_id, "да Аникоша?", reply_markup=markup)
 
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_states[message.from_user.id] = 'menu'
     send_main_menu(message.chat.id)
 
+
 @bot.message_handler(func=lambda message: True)
 def handle_all(message):
     user_id = message.from_user.id
     text = message.text
-
-    # Если пользователь не в состоянии - считаем что в меню
     state = user_states.get(user_id, 'menu')
 
     if state == 'menu':
@@ -84,9 +98,10 @@ def handle_all(message):
             user_states[user_id] = 'menu'
             send_main_menu(message.chat.id)
         else:
-            answer = query_hf(text)
+            bot.send_chat_action(message.chat.id, 'typing')
+            answer = query_openrouter(text)
             bot.send_message(message.chat.id, answer)
 
-print(f"HF_API_TOKEN = {HF_API_TOKEN}")
 
+print("🤖 Бот запущен")
 bot.polling()
